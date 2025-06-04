@@ -21,7 +21,7 @@ instruction_set = {
 
 # Instructions with register encodings
 reg_ops = {'inc*-reg': 0x10, 'dec*-reg': 0x11, 'to-reg': 0x20, 'from-reg': 0x21}
-regs = {'r0': 0b000, 'r1': 0b001, 'r2': 0b010, 'r3': 0b011, 'r4': 0b100}
+regs = {'r0': 0b000, 'r1': 0b001, 'r2': 0b010, 'r3': 0b011, 'r4': 0b100, 'r5': 0b101}
 
 # Two-byte immediate instructions
 imm_ops = {
@@ -38,13 +38,25 @@ branch_ops = {
 # ACC immediate load
 acc_imm_prefix = 0x70
 
+# def parse_operand(operand):
+#     if operand.startswith('0x'):
+#         return int(operand, 16)
+#     elif operand.startswith('0b'):
+#         return int(operand, 2)
+#     else:
+#         return int(operand)
+
 def parse_operand(operand):
-    if operand.startswith('0x'):
-        return int(operand, 16)
-    elif operand.startswith('0b'):
-        return int(operand, 2)
-    else:
-        return int(operand)
+    try:
+        if operand.startswith('0x'):
+            return int(operand, 16)
+        elif operand.startswith('0b'):
+            return int(operand, 2)
+        else:
+            return int(operand)
+    except ValueError:
+        raise ValueError(f"Could not parse operand: {operand}")
+
 
 def assemble_line(line):
     # Strip comments and split tokens
@@ -97,10 +109,20 @@ def assemble_line(line):
             if len(tokens) < 2:
                 raise ValueError(f"Missing branch address for: {instr}")
             imm = parse_operand(tokens[1])
-            imm_bin = imm & 0x7FF
-            code.append(branch_ops[instr] | ((imm_bin >> 8) & 0x0F))
-            code.append(imm_bin & 0xFF)
+            imm_bin = imm & 0x7FF  # 11-bit address
+
+            base_opcode = branch_ops[instr]
+            high_bits = (imm_bin >> 8) & 0x07  # bits 10–8
+            low_byte = imm_bin & 0xFF
+
+            if instr == 'b':
+                code.append(base_opcode)       # b uses fixed 0xE0 and only low byte
+            else:
+                code.append(base_opcode | high_bits)
+
+            code.append(low_byte)
         return code
+
 
     elif instr in ['rarb', 'rcrd']:
         if len(tokens) < 2:
@@ -127,11 +149,30 @@ def assemble_line(line):
 
 def assemble(input_file, output_file):
     # First pass: record labels
+    # labels = {}
+    # addr = 0
+    # with open(input_file, 'r') as fin:
+    #     for line in fin:
+    #         line_clean = line.split(';')[0].strip()
+    #         if line_clean.endswith(':'):
+    #             label = line_clean[:-1].strip()
+    #             labels[label] = addr
+    #         else:
+    #             try:
+    #                 code = assemble_line(line_clean)
+    #                 addr += len(code)
+    #             except ValueError:
+    #                 pass  # Ignore errors for now (will catch later)
+
+    # First pass: record labels
     labels = {}
     addr = 0
     with open(input_file, 'r') as fin:
         for line in fin:
             line_clean = line.split(';')[0].strip()
+            if not line_clean:
+                continue
+
             if line_clean.endswith(':'):
                 label = line_clean[:-1].strip()
                 labels[label] = addr
@@ -139,8 +180,13 @@ def assemble(input_file, output_file):
                 try:
                     code = assemble_line(line_clean)
                     addr += len(code)
-                except ValueError:
-                    pass  # Ignore errors for now (will catch later)
+                except ValueError as e:
+                    # If the error is due to unresolved labels, just skip for now
+                    if 'Could not parse operand' in str(e) or 'Missing' in str(e):
+                        continue  # label might be resolved in second pass
+                    else:
+                        print(f"[Warning] Skipping invalid instruction: {line_clean}")
+
 
     # Second pass: generate code with label resolution
     with open(input_file, 'r') as fin, open(output_file, 'wb') as fout:
@@ -148,18 +194,26 @@ def assemble(input_file, output_file):
             line_clean = line.split(';')[0].strip()
             if not line_clean or line_clean.endswith(':'):
                 continue
+
             tokens = re.split(r'\s+', line_clean)
             instr = tokens[0].lower()
-            if instr in branch_ops and len(tokens) == 2:
-                target = tokens[1]
-                if target in labels:
-                    tokens[1] = str(labels[target])
-                    line_clean = ' '.join(tokens)
+
+            if instr in branch_ops and len(tokens) >= 2:
+                label = tokens[1]
+                if label in labels:
+                    print(f"[Assembler] Resolved label '{label}' -> {labels[label]:02X}")
+                    tokens[1] = str(labels[label])
+                    line_clean = ' '.join(tokens)  # rebuild line with resolved label
+
             try:
                 machine_code = assemble_line(line_clean)
                 fout.write(bytearray(machine_code))
+                print(f"[0x{addr:02X}] {line_clean:<30} -> {[f'{b:02X}' for b in machine_code]}")
+                addr += len(machine_code)
+
             except ValueError as e:
                 print(f"[Line {lineno}] Error: {e} -> \"{line.strip()}\"")
+                raise e
 
 
 if __name__ == '__main__':
