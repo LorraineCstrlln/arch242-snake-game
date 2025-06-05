@@ -46,7 +46,17 @@ acc_imm_prefix = 0x70
 #     else:
 #         return int(operand)
 
+ACC_CODE = 0  # or whatever encoding you want for ACC
 def parse_operand(operand):
+    operand = operand.lower().strip()
+    
+    if operand == "acc":
+        # define ACC_CODE somewhere, for example 0 or a unique code
+        return ACC_CODE
+    
+    if operand in regs:
+        return operand  # Leave registers as string for the caller to handle
+    
     try:
         if operand.startswith('0x'):
             return int(operand, 16)
@@ -58,8 +68,9 @@ def parse_operand(operand):
         raise ValueError(f"Could not parse operand: {operand}")
 
 
+
+
 def assemble_line(line):
-    # Strip comments and split tokens
     line = line.split(';')[0].strip()
     if not line:
         return []
@@ -83,11 +94,19 @@ def assemble_line(line):
 
     elif instr in imm_ops:
         if len(tokens) < 2:
-            raise ValueError(f"Missing immediate for: {instr}")
-        imm = parse_operand(tokens[1])
-        code.append(imm_ops[instr])
-        code.append(imm & 0x0F)
-        return code
+            raise ValueError(f"Missing operand for: {instr}")
+        operand = tokens[1].lower()
+        if operand in regs:
+            # e.g., sub r2  →  from-reg r2, sub 0
+            code.append(reg_ops['from-reg'] | (regs[operand] << 1))
+            code.append(imm_ops[instr])
+            code.append(0x00)
+            return code
+        else:
+            imm = parse_operand(operand)
+            code.append(imm_ops[instr])
+            code.append(imm & 0x0F)
+            return code
 
     elif instr == 'acc':
         if len(tokens) < 2:
@@ -109,20 +128,16 @@ def assemble_line(line):
             if len(tokens) < 2:
                 raise ValueError(f"Missing branch address for: {instr}")
             imm = parse_operand(tokens[1])
-            imm_bin = imm & 0x7FF  # 11-bit address
-
+            imm_bin = imm & 0x7FF
             base_opcode = branch_ops[instr]
-            high_bits = (imm_bin >> 8) & 0x07  # bits 10–8
+            high_bits = (imm_bin >> 8) & 0x07
             low_byte = imm_bin & 0xFF
-
             if instr == 'b':
-                code.append(base_opcode)       # b uses fixed 0xE0 and only low byte
+                code.append(base_opcode)
             else:
                 code.append(base_opcode | high_bits)
-
             code.append(low_byte)
         return code
-
 
     elif instr in ['rarb', 'rcrd']:
         if len(tokens) < 2:
