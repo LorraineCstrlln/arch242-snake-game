@@ -17,10 +17,39 @@ to-reg r0
 
 start:
     from-pa
-    to-reg r0      ; r0 = direction (arrow key input)
+    to-reg r3        ; r3 = new input candidate
 
+    ; Check if input is 0,1,2 or 3
+    from-reg r3
+    sub 0
+    beqz valid_input
+    nop
+    from-reg r3
+    sub 1
+    beqz valid_input
+    nop
+    from-reg r3
+    sub 2
+    beqz valid_input
+    nop
+    from-reg r3
+    sub 3
+    beqz valid_input
+    nop
+    b invalid_input
+
+valid_input:
+    from-reg r3
+    to-reg r0
+    b move_snake
+
+invalid_input:
+    ; Keep previous direction in r0 (no change)
+    b move_snake
+
+move_snake:
     from-reg r0
-    to-ioa         ; show direction
+    to-ioa         ; show direction (optional)
 
     from-mba
     to-reg r1      ; r1 = X
@@ -47,7 +76,7 @@ start:
     sub 3
     beqz up
     nop
-    b move
+    b move_continue
 
 right:
     from-reg r1
@@ -57,11 +86,11 @@ right:
     sub 10
     beqz wrapx
     nop
-    b move
+    b move_continue
 wrapx:
     add 0
     to-reg r1
-    b move
+    b move_continue
 
 left:
     from-reg r1
@@ -71,11 +100,11 @@ left:
     sub 255
     beqz wrapxmax
     nop
-    b move
+    b move_continue
 wrapxmax:
     add 9
     to-reg r1
-    b move
+    b move_continue
 
 down:
     from-reg r2
@@ -85,11 +114,11 @@ down:
     sub 20
     beqz wrapy
     nop
-    b move
+    b move_continue
 wrapy:
     add 0
     to-reg r2
-    b move
+    b move_continue
 
 up:
     from-reg r2
@@ -99,38 +128,36 @@ up:
     sub 255
     beqz wrapymax
     nop
-    b move
+    b move_continue
 wrapymax:
     add 19
     to-reg r2
-    b move
+    b move_continue
 
-move:
-    ; Set LED matrix address = 0xC0 + Y
-    add 12
-    to-reg r3      ; r3 = 0xC (RB)
-    from-reg r2
-    to-reg r4      ; r4 = Y (RA)
+move_continue:
+    ; Update snake position in MBA and MDC
     from-reg r1
-    to-reg r0      ; r0 = X (bit index)
+    to-mba
+    from-reg r2
+    to-mdc
 
-    ; Check collision
+    ; Check collision with snake body at current pos
     from-mba
     and 1
-    beqz draw
+    beqz draw_snake
     nop
     b restart
 
-draw:
-    ; Write 1 << X bit into MEM[RB:RA]
-    from-reg r0
-    to-reg r1
+draw_snake:
+    ; Draw snake head bit in MBA (1 << X)
+    from-reg r1
+    to-reg r0      ; bit index = X
     acc 1
 bitloop:
-    from-reg r1
+    from-reg r0
     beqz setbit
     dec
-    to-reg r1
+    to-reg r0
     add 1
     b bitloop
 setbit:
@@ -139,19 +166,20 @@ setbit:
     ; Check food at 0xFE (Y) and 0xFF (X)
     add 0xFE
     from-mba       ; load food Y
-    sub r2
-    beqz chkx
+    from-reg r2
+    sub ACC
+    beqz chk_food_x
     nop
-    b delay
-chkx:
+    b delay_loop
+chk_food_x:
     add 0xFF
     from-mba       ; load food X
     sub r1
-    beqz eat
+    beqz eat_food
     nop
-    b delay
+    b delay_loop
 
-eat:
+eat_food:
     ; Draw new food (pseudo-random)
     acc 3
     xor 7
@@ -172,12 +200,12 @@ eat:
     to-reg r0
     to-iob         ; score shown on IOB
 
-    b delay
+    b delay_loop
 
-delay:
+delay_loop:
     add 10
     to-reg r4
-wait:
+wait_delay:
     from-reg r4
     beqz start
     nop
@@ -186,7 +214,7 @@ wait:
     to-reg r4
     from-pa
     to-reg r0
-    b wait
+    b wait_delay
 
 restart:
     ; Reset snake to center
