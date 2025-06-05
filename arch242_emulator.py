@@ -3,9 +3,16 @@ import sys
 
 class Arch242Emulator:
     def __init__(self, program):
+        self.ACC = 0
+        self.memory = [0]*256
+        self.registers = [0] * 5
+        self.original_program = program[:]  # Keep a copy for resets
+        self.reset()
+        pyxel.init(100, 80, title="Arch-242 Snake Game")
+        pyxel.run(self.update, self.draw)
+
+    def reset(self):
         self.memory = [0] * 256
-        # self.registers = {'ACC': 0, 'CF': 0, 'PC': 0,
-        #                   'R0': 0, 'R1': 0, 'R2': 0, 'R3': 0, 'R4': 0, 'R5': 0}
         self.registers = {
             'ACC': 0,
             'CF': 0,
@@ -24,9 +31,7 @@ class Arch242Emulator:
             'IOC': 0
         }
         self.delay_counter = 0
-        self.load_program(program)
-        pyxel.init(100, 80, title="Arch-242 Snake Game")
-        pyxel.run(self.update, self.draw)
+        self.load_program(self.original_program)
 
     def load_program(self, program):
         for i, byte in enumerate(program):
@@ -41,9 +46,8 @@ class Arch242Emulator:
     def fetch_next_byte(self):
         pc = self.registers['PC']
         byte = self.memory[pc]
-        self.registers['PC'] = (pc + 1) & 0xFF  # PC is 8-bit for 256-byte memory
+        self.registers['PC'] = (pc + 1) & 0xFF
         return byte
-
 
     def execute(self, opcode):
         # Helper to get memory address from 2 registers: high nibble first
@@ -147,6 +151,10 @@ class Arch242Emulator:
         elif opcode == 0x0F:
             addr = get_addr('RD', 'RC')
             self.memory[addr] = (self.memory[addr] - 1) & 0xF
+
+        elif opcode == 0x1F:  # or*-mba
+            addr = (self.registers['RB'] << 4) | self.registers['RA']
+            self.memory[addr] = self.ACC | self.memory[addr]
 
         # inc*-reg 0x10 to 0x14: 0001RRR0
         elif 0x10 <= opcode <= 0x14:
@@ -305,10 +313,14 @@ class Arch242Emulator:
 
 
     def update(self):
+        # Reset emulator if 'R' is pressed
+        if pyxel.btnp(pyxel.KEY_R):
+            print("Resetting emulator...")
+            self.reset()
+
         for _ in range(10):
             pc_snapshot = self.registers['PC']
             opcode = self.fetch()
-            # print(f"PC: {self.registers['PC']:03X}, ACC: {self.registers['ACC']}, executing opcode: {opcode:02X}")
             self.execute(opcode)
 
             if pc_snapshot == self.registers['PC']:
