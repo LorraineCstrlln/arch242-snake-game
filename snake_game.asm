@@ -1,83 +1,51 @@
-; Snake Game (fully working version for Arch-242 constraints)
-
-; Uses only registers R0–R4 (RA–RE), and 4-bit ACC
-; Snake length fixed to 3, food respawns, score up to 15, resets on collision
-
-; === Initialize snake head position ===
+; === Initialize snake position ===
 add 0
 add 5
 to-mba      ; X = 5
+
 add 0
 add 10
 to-mdc      ; Y = 10
 
-; Initialize direction (default = 0, right)
-add 0
-to-reg r0
+timer-start     ; Start TIMER
 
-start:
+main:
     from-pa
-    to-reg r3        ; r3 = new input candidate
+    to-reg r0      ; Load direction input
 
-    ; Check if input is 0,1,2 or 3
-    from-reg r3
-    sub 0
-    beqz valid_input
-    nop
-    from-reg r3
-    sub 1
-    beqz valid_input
-    nop
-    from-reg r3
-    sub 2
-    beqz valid_input
-    nop
-    from-reg r3
-    sub 3
-    beqz valid_input
-    nop
-    b invalid_input
-
-valid_input:
-    from-reg r3
-    to-reg r0
-    b move_snake
-
-invalid_input:
-    ; Keep previous direction in r0 (no change)
-    b move_snake
-
-move_snake:
     from-reg r0
-    to-ioa         ; show direction (optional)
+    to-ioa         ; Echo direction to IOA (optional)
 
     from-mba
-    to-reg r1      ; r1 = X
-    from-mdc
-    to-reg r2      ; r2 = Y
+    to-reg r1      ; Load X
 
-    ; direction == 0? (right)
+    from-mdc
+    to-reg r2      ; Load Y
+
+    ; Direction checks
     from-reg r0
     sub 0
     beqz right
     nop
-    ; direction == 1? (down)
+
     from-reg r0
     sub 1
     beqz down
     nop
-    ; direction == 2? (left)
+
     from-reg r0
     sub 2
     beqz left
     nop
-    ; direction == 3? (up)
+
     from-reg r0
     sub 3
     beqz up
     nop
-    b move_continue
 
+    b wait
+
+; === Movement Handlers ===
 right:
     from-reg r1
     inc
@@ -86,25 +54,27 @@ right:
     sub 10
     beqz wrapx
     nop
-    b move_continue
+    b update
+
 wrapx:
-    add 0
+    acc 0
     to-reg r1
-    b move_continue
+    b update
 
 left:
     from-reg r1
     dec
     to-reg r1
     from-reg r1
-    sub 255
+    sub 0
     beqz wrapxmax
     nop
-    b move_continue
+    b update
+
 wrapxmax:
-    add 9
+    acc 9
     to-reg r1
-    b move_continue
+    b update
 
 down:
     from-reg r2
@@ -114,114 +84,66 @@ down:
     sub 20
     beqz wrapy
     nop
-    b move_continue
+    b update
+
 wrapy:
-    add 0
+    acc 0
     to-reg r2
-    b move_continue
+    b update
 
 up:
     from-reg r2
     dec
     to-reg r2
     from-reg r2
-    sub 255
+    sub 0
     beqz wrapymax
     nop
-    b move_continue
-wrapymax:
-    add 19
-    to-reg r2
-    b move_continue
+    b update
 
-move_continue:
-    ; Update snake position in MBA and MDC
+wrapymax:
+    acc 19
+    to-reg r2
+    b update
+
+; === Draw and Save Position ===
+update:
     from-reg r1
     to-mba
+
     from-reg r2
     to-mdc
 
-    ; Check collision with snake body at current pos
-    from-mba
-    and 1
-    beqz draw_snake
-    nop
-    b restart
+    ; Compute addr = 0xC0 + Y
+    acc 12
+    to-reg r0      ; RB = 0xC
 
-draw_snake:
-    ; Draw snake head bit in MBA (1 << X)
+    from-reg r2
+    to-reg r1      ; RA = Y
+
+    ; Get X value
     from-reg r1
-    to-reg r0      ; bit index = X
+    to-reg r4      ; r4 = X
+
+    from-reg r4
+    to-reg r3      ; r3 = X counter
+
     acc 1
 bitloop:
-    from-reg r0
+    from-reg r3
     beqz setbit
     dec
-    to-reg r0
+    to-reg r3
     add 1
     b bitloop
+
 setbit:
-    to-mba
+    to-mba             ; MEM[RB:RA] = bitmask
 
-    ; Check food at 0xFE (Y) and 0xFF (X)
-    add 0xFE
-    from-mba       ; load food Y
-    from-reg r2
-    sub ACC
-    beqz chk_food_x
-    nop
-    b delay_loop
-chk_food_x:
-    add 0xFF
-    from-mba       ; load food X
-    sub r1
-    beqz eat_food
-    nop
-    b delay_loop
+    b wait
 
-eat_food:
-    ; Draw new food (pseudo-random)
-    acc 3
-    xor 7
-    to-reg r2
-    acc 2
-    xor 6
-    to-reg r1
-    add 0xFE
-    to-mba
-    from-reg r1
-    add 0xFF
-    to-mba
-
-    ; Increment score in IOA (max 15)
-    from-reg r0
-    inc
-    and 15
-    to-reg r0
-    to-iob         ; score shown on IOB
-
-    b delay_loop
-
-delay_loop:
-    add 10
-    to-reg r4
-wait_delay:
-    from-reg r4
-    beqz start
-    nop
-    from-reg r4
-    dec
-    to-reg r4
+; === Wait until next timer tick (emulator will jump to 0x04 every 4 ticks) ===
+wait:
     from-pa
-    to-reg r0
-    b wait_delay
-
-restart:
-    ; Reset snake to center
-    add 5
-    to-reg r1
-    to-mba
-    add 10
-    to-reg r2
-    to-mdc
-    b start
+    to-reg r4          ; Still allow updating direction
+    b wait             ; Wait forever; emulator will reset PC to 0x04 on timer tick
