@@ -34,7 +34,6 @@ class Arch242Emulator:
         self.debug = True
         self.load_program(program)
 
-        # DELETE ME LATER
         # === SnakeGame State ===
         self.snake = [(5, 10), (4, 10), (3, 10)]
         self.direction = (1, 0)
@@ -76,6 +75,7 @@ class Arch242Emulator:
         self.game_over = False
 
     # DELETE LATER!!!! FOR DEBUGGING
+    #why 
     def disassemble(self, opcode):
         instr_map = {
             0x00: "rot-r", 0x01: "rot-l", 0x02: "rot-rc", 0x03: "rot-lc",
@@ -403,18 +403,6 @@ class Arch242Emulator:
 
     def debug_dump(self, pc_snapshot, opcode):
         print(f"[DEBUG] PC: 0x{pc_snapshot:02X} | Opcode: 0x{opcode:02X} | Instr: {self.disassemble(opcode)}")
-        # print("Registers:")
-        # for reg in ['RA', 'RB', 'RC', 'RD', 'RE', 'RF', 'ACC', 'CF', 'PA', 'PC', 'TIMER']:
-        #     val = self.registers[reg]
-        #     print(f"  {reg:>3}: {val:02X}", end='  ')
-        #     if reg in ['RF', 'CF', 'TIMER', 'PC']:
-        #         print()
-        # print("\nMemory [0xC0-0xCF]:")
-        # for i in range(0xC0, 0xD0):
-        #     print(f"  0x{i:02X}: {self.memory[i]:02X}", end='  ')
-        #     if (i - 0xC0) % 4 == 3:
-        #         print()
-        # print("--------")
 
     def update(self):
         if self.timer_running:
@@ -448,7 +436,6 @@ class Arch242Emulator:
             else:
                 self.delay_counter = 0
 
-        # DELETE ME LATER
         # === Python Snake Logic ===
         if self.game_over:
             if pyxel.btnp(pyxel.KEY_R):
@@ -468,7 +455,6 @@ class Arch242Emulator:
             self.direction = (0, 1)
         elif pyxel.btn(pyxel.KEY_UP) and (dx, dy) != (0, 1):
             self.direction = (0, -1)
-
 
         head_x, head_y = self.snake[0]
         dx, dy = self.direction
@@ -490,11 +476,6 @@ class Arch242Emulator:
         # Clear frame memory area
         for row in range(20):
             self.memory[0x80 + row] = 0
-
-        # x = self.memory[0x80]
-        # y = self.memory[0x81]
-        # if 0 <= x < 10 and 0 <= y < 20:
-        #     self.memory[0x80 + y] |= (1 << x)
 
         # Read snake length
         length = self.memory[0xA1]  # Snake length
@@ -543,8 +524,6 @@ class Arch242Emulator:
                 if row >= 2 and (row_bits & (1 << col)):
                     pyxel.rect(col * 8, row * 4, 7, 3, 11)
         
-        # DELETE ME LATER
-        # === Draw Python Snake ===
         for x, y in self.snake:
             pyxel.rect(x * 8, y * 4, 7, 3, 11)
 
@@ -555,7 +534,7 @@ class Arch242Emulator:
         # Draw score
         pyxel.text(2, 2, f"Score: {self.score}", 7)
         if self.game_over:
-            pyxel.text(20, 40, "GG, Press R to try again", 8)
+            pyxel.text(20, 40, "Press R to try again", 8)
         # ==========================
 
 
