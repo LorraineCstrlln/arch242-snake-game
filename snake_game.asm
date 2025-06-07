@@ -14,11 +14,11 @@ init:
     to-reg r1
     to-reg r2
 
-    ; Head = (5,10)
-    acc 5
-    to-reg r3
-    acc 10
-    to-reg r4
+    ; Head = (0,0)
+    acc 0
+    to-reg r3 ;X
+    acc 0
+    to-reg r4 ;Y
 
     ; Store to snake head memory A2 (X), A3 (Y)
     acc 0x0A
@@ -170,3 +170,29 @@ wait:
     from-pa
     to-reg r5
     b wait           ; PC will reset to 0x04 on TIMER tick
+
+
+; === Eat Food Routine ===
+eat_food:
+    ; Load score from memory [A0] (score addr = 0x0A, 0x00)
+    acc 0x0A
+    to-reg r0
+    acc 0x00
+    to-reg r1
+    from-mba           ; ACC = score
+    inc                ; ACC = score + 1
+    to-mba             ; store new score
+
+    ; Reset food position to (1,1) as example
+    acc 0x0B
+    to-reg r0
+    acc 0x00
+    to-reg r1
+    acc 1
+    to-mba
+    inc*-reg r1
+    acc 1
+    to-mba
+
+    b wait
+
