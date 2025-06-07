@@ -1,5 +1,6 @@
 import pyxel
 import sys
+import random
 
 class Arch242Emulator:
     def __init__(self, program):
@@ -14,24 +15,34 @@ class Arch242Emulator:
             'RF': 0,
 
             # Special reg
-            'ACC': 0,     # 4 bit
-            'CF': 0,      # 1 bit
-            'PC': 0,      # 16 bit
-            'TEMP': 0,    # 16 bit
-            'TIMER': 0,   # 8 bit
-            'EI': 0,      # 1 bit
-            'PA': 0,      # 4 bit
+            'ACC': 0,     # 4
+            'CF': 0,      # 1
+            'PC': 0,      # 16
+            'TEMP': 0,    # 16
+            'TIMER': 0,   # 8
+            'EI': 0,      # 1
+            'PA': 0,      # 4
 
             # I/O reg
-            'IOA': 0,     # 4 bit
-            'IOB': 0,     # 4 bit
-            'IOC': 0      # 4 bit
+            'IOA': 0,     # 4
+            'IOB': 0,     # 4
+            'IOC': 0      # 4
         }
 
         self.delay_counter = 0
         self.timer_running = False
         self.debug = True
         self.load_program(program)
+
+        # DELETE ME LATER
+        # === SnakeGame State ===
+        self.snake = [(5, 10), (4, 10), (3, 10)]
+        self.direction = (1, 0)
+        self.food = self.spawn_food()
+        self.score = 0
+        self.game_over = False
+        # ========================
+
         pyxel.init(80, 80, title="Arch-242 Snake Game")
         pyxel.run(self.update, self.draw)
 
@@ -51,8 +62,21 @@ class Arch242Emulator:
         self.registers['PC'] = (pc + 1) & 0xFF  # PC is 8-bit for 256-byte memory
         return byte
 
+    def spawn_food(self):
+        while True:
+            food = (random.randint(0, 9), random.randint(2, 18))
+            if food not in self.snake:
+                return food
+
+    def reset_snake_game(self):
+        self.snake = [(5, 10), (4, 10), (3, 10)]
+        self.direction = (1, 0)
+        self.food = self.spawn_food()
+        self.score = 0
+        self.game_over = False
+
+    # DELETE LATER!!!! FOR DEBUGGING
     def disassemble(self, opcode):
-        # One-byte instruction decoding for debug display
         instr_map = {
             0x00: "rot-r", 0x01: "rot-l", 0x02: "rot-rc", 0x03: "rot-lc",
             0x04: "from-mba", 0x05: "to-mba", 0x06: "from-mdc", 0x07: "to-mdc",
@@ -390,7 +414,7 @@ class Arch242Emulator:
         #     print(f"  0x{i:02X}: {self.memory[i]:02X}", end='  ')
         #     if (i - 0xC0) % 4 == 3:
         #         print()
-        # print("---- End Debug ----")
+        # print("--------")
 
     def update(self):
         if self.timer_running:
@@ -423,6 +447,45 @@ class Arch242Emulator:
                     sys.exit(1)
             else:
                 self.delay_counter = 0
+
+        # DELETE ME LATER
+        # === Python Snake Logic ===
+        if self.game_over:
+            if pyxel.btnp(pyxel.KEY_R):
+                self.reset_snake_game()
+            return
+
+        if pyxel.frame_count % 8 != 0:
+            return
+
+        dx, dy = self.direction
+
+        if pyxel.btn(pyxel.KEY_RIGHT) and (dx, dy) != (-1, 0):
+            self.direction = (1, 0)
+        elif pyxel.btn(pyxel.KEY_LEFT) and (dx, dy) != (1, 0):
+            self.direction = (-1, 0)
+        elif pyxel.btn(pyxel.KEY_DOWN) and (dx, dy) != (0, -1):
+            self.direction = (0, 1)
+        elif pyxel.btn(pyxel.KEY_UP) and (dx, dy) != (0, 1):
+            self.direction = (0, -1)
+
+
+        head_x, head_y = self.snake[0]
+        dx, dy = self.direction
+        new_head = ((head_x + dx) % 10, (head_y + dy - 2) % 17 + 2)
+
+        if new_head in self.snake:
+            self.game_over = True
+            return
+
+        self.snake.insert(0, new_head)
+
+        if new_head == self.food:
+            self.score += 1
+            self.food = self.spawn_food()
+        else:
+            self.snake.pop()
+        # ====================
 
         # Clear frame memory area
         for row in range(20):
@@ -479,11 +542,22 @@ class Arch242Emulator:
             for col in range(10):
                 if row >= 2 and (row_bits & (1 << col)):
                     pyxel.rect(col * 8, row * 4, 7, 3, 11)
-        # # Draw food
-        # fx = self.memory[0xB0]
-        # fy = self.memory[0xB1]
-        # if 0 <= fx < 10 and 0 <= fy < 20:
-        #     pyxel.rect(fx * 8, fy * 4, 7, 3, 9) 
+        
+        # DELETE ME LATER
+        # === Draw Python Snake ===
+        for x, y in self.snake:
+            pyxel.rect(x * 8, y * 4, 7, 3, 11)
+
+        # Draw food
+        fx, fy = self.food
+        pyxel.rect(fx * 8, fy * 4, 7, 3, 9)
+
+        # Draw score
+        pyxel.text(2, 2, f"Score: {self.score}", 7)
+        if self.game_over:
+            pyxel.text(20, 40, "GG, Press R to try again", 8)
+        # ==========================
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

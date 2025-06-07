@@ -1,149 +1,172 @@
-; === Initialize snake position ===
-add 0
-add 5
-to-mba      ; X = 5
+; Memory map:
+; 0x80 - 0x93: Display buffer (rows)
+; 0x90: Direction input (0=right, 1=down, 2=left, 3=up)
+; 0xA0: Score
+; 0xA1: Snake length
+; 0xA2 - 0xBF: Snake body (x0, y0, x1, y1, ...)
+; 0xB0: Food X
+; 0xB1: Food Y
 
-add 0
-add 10
-to-mdc      ; Y = 10
+; === Initialization ===
+init:
+    acc 0
+    to-reg r0
+    to-reg r1
+    to-reg r2
 
-timer-start     ; Start TIMER
+    ; Head = (5,10)
+    acc 5
+    to-reg r3
+    acc 10
+    to-reg r4
 
+    ; Store to snake head memory A2 (X), A3 (Y)
+    acc 0x0A
+    to-reg r0       ; RB = 0x0A
+    acc 0x02
+    to-reg r1       ; RA = 0x02
+    from-reg r3
+    to-mba          ; [0xA2] = 5
+    inc*-reg r1
+    from-reg r4
+    to-mba          ; [0xA3] = 10
+
+    ; Set length to 1 (1 segment)
+    acc 1
+    acc 0x0A
+    to-reg r0
+    acc 0x01
+    to-reg r1
+    to-mba          ; [0xA1] = 1
+
+    ; Set score = 0
+    acc 0
+    acc 0x0A
+    to-reg r0
+    acc 0x00
+    to-reg r1
+    to-mba          ; [0xA0] = 0
+
+    ; Food pos = (3, 5)
+    acc 3
+    acc 0x0B
+    to-reg r0
+    acc 0x00
+    to-reg r1
+    to-mba          ; [0xB0] = 3
+    acc 5
+    inc*-reg r1
+    to-mba          ; [0xB1] = 5
+
+    timer-start
+    b main
+
+; === Main Loop ===
 main:
+    ; Direction comes from PA
     from-pa
-    to-reg r0      ; Load direction input
+    to-reg r5       ; r5 = dir
 
-    from-reg r0
-    to-ioa         ; Echo direction to IOA (optional)
+    ; Load head position
+    acc 0x0A
+    to-reg r0
+    acc 0x02
+    to-reg r1
+    from-mba        ; X
+    to-reg r2
+    inc*-reg r1
+    from-mba        ; Y
+    to-reg r3
 
-    from-mba
-    to-reg r1      ; Load X
-
-    from-mdc
-    to-reg r2      ; Load Y
-
-    ; Direction checks
-    from-reg r0
+    ; Apply direction (r5)
+    from-reg r5
     sub 0
-    beqz right
-    nop
-
-    from-reg r0
+    beqz dir_right
+    from-reg r5
     sub 1
-    beqz down
-    nop
-
-    from-reg r0
+    beqz dir_down
+    from-reg r5
     sub 2
-    beqz left
-    nop
-
-    from-reg r0
+    beqz dir_left
+    from-reg r5
     sub 3
-    beqz up
-    nop
+    beqz dir_up
+    b store_head
 
-    b wait
-
-; === Movement Handlers ===
-right:
-    from-reg r1
-    inc
-    to-reg r1
-    from-reg r1
+dir_right:
+    inc*-reg r2
+    from-reg r2
     sub 10
-    beqz wrapx
-    nop
-    b update
-
-wrapx:
+    beqz wrap_x
+    b store_head
+wrap_x:
     acc 0
-    to-reg r1
-    b update
+    to-reg r2
+    b store_head
 
-left:
-    from-reg r1
-    dec
-    to-reg r1
-    from-reg r1
+dir_left:
+    dec*-reg r2
+    from-reg r2
     sub 0
-    beqz wrapxmax
-    nop
-    b update
-
-wrapxmax:
+    beqz wrap_xmax
+    b store_head
+wrap_xmax:
     acc 9
-    to-reg r1
-    b update
-
-down:
-    from-reg r2
-    inc
     to-reg r2
-    from-reg r2
+    b store_head
+
+dir_down:
+    inc*-reg r3
+    from-reg r3
     sub 20
-    beqz wrapy
-    nop
-    b update
+    beqz wrap_y
+    b store_head
+wrap_y:
+    acc 2
+    to-reg r3
+    b store_head
 
-wrapy:
-    acc 0
-    to-reg r2
-    b update
+dir_up:
+    dec*-reg r3
+    from-reg r3
+    sub 2
+    beqz wrap_ymax
+    b store_head
+wrap_ymax:
+    acc 18
+    to-reg r3
 
-up:
+store_head:
+    ; store updated head to A2, A3
+    acc 0x0A
+    to-reg r0
+    acc 0x02
+    to-reg r1
     from-reg r2
-    dec
-    to-reg r2
-    from-reg r2
-    sub 0
-    beqz wrapymax
-    nop
-    b update
-
-wrapymax:
-    acc 19
-    to-reg r2
-    b update
-
-; === Draw and Save Position ===
-update:
-    from-reg r1
+    to-mba
+    inc*-reg r1
+    from-reg r3
     to-mba
 
+    ; draw head: RB = 0x0C, RA = Y
+    acc 0x0C
+    to-reg r0
+    from-reg r3
+    to-reg r1
     from-reg r2
-    to-mdc
-
-    ; Compute addr = 0xC0 + Y
-    acc 12
-    to-reg r0      ; RB = 0xC
-
-    from-reg r2
-    to-reg r1      ; RA = Y
-
-    ; Get X value
-    from-reg r1
-    to-reg r4      ; r4 = X
-
-    from-reg r4
-    to-reg r3      ; r3 = X counter
-
+    to-reg r4        ; bit loop counter
     acc 1
 bitloop:
-    from-reg r3
-    beqz setbit
-    dec
-    to-reg r3
+    from-reg r4
+    beqz setpixel
+    dec*-reg r4
     add 1
     b bitloop
-
-setbit:
-    to-mba             ; MEM[RB:RA] = bitmask
-
+setpixel:
+    to-mba
     b wait
 
-; === Wait until next timer tick (emulator will jump to 0x04 every 4 ticks) ===
 wait:
     from-pa
-    to-reg r4          ; Still allow updating direction
-    b wait             ; Wait forever; emulator will reset PC to 0x04 on timer tick
+    to-reg r5
+    b wait           ; PC will reset to 0x04 on TIMER tick

@@ -1,8 +1,6 @@
 import sys
 import re
 
-# Arch-242 Assembler: Converts assembly to machine code
-
 # Define instruction encodings
 instruction_set = {
     'rot-r': 0x00, 'rot-l': 0x01, 'rot-rc': 0x02, 'rot-lc': 0x03,
@@ -66,9 +64,6 @@ def parse_operand(operand):
             return int(operand)
     except ValueError:
         raise ValueError(f"Could not parse operand: {operand}")
-
-
-
 
 def assemble_line(line):
     line = line.split(';')[0].strip()
@@ -223,7 +218,7 @@ def assemble(input_file, output_file):
             try:
                 machine_code = assemble_line(line_clean)
                 fout.write(bytearray(machine_code))
-                print(f"[0x{addr:02X}] {line_clean:<30} -> {[f'{b:02X}' for b in machine_code]}")
+                print(f"[0x{addr:04X}] {line_clean:<30} -> HEX: {[f'{b:02X}' for b in machine_code]}  BIN: {[f'{b:08b}' for b in machine_code]}")
                 addr += len(machine_code)
 
             except ValueError as e:
