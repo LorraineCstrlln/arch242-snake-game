@@ -31,7 +31,6 @@ class Arch242Emulator:
 
         self.delay_counter = 0
         self.timer_running = False
-        self.debug = True
         self.load_program(program)
 
         # === SnakeGame State ===
@@ -73,33 +72,6 @@ class Arch242Emulator:
         self.food = self.spawn_food()
         self.score = 0
         self.game_over = False
-
-    # DELETE LATER!!!! FOR DEBUGGING
-    #why 
-    def disassemble(self, opcode):
-        instr_map = {
-            0x00: "rot-r", 0x01: "rot-l", 0x02: "rot-rc", 0x03: "rot-lc",
-            0x04: "from-mba", 0x05: "to-mba", 0x06: "from-mdc", 0x07: "to-mdc",
-            0x08: "addc-mba", 0x09: "add-mba", 0x0A: "subc-mba", 0x0B: "sub-mba",
-            0x0C: "inc*-mba", 0x0D: "dec*-mba", 0x0E: "inc*-mdc", 0x0F: "dec*-mdc",
-            0x2A: "clr-cf", 0x2B: "set-cf", 0x2C: "set-ei", 0x2D: "clr-ei",
-            0x2E: "ret", 0x2F: "retc", 0x30: "from-pa", 0x31: "inc",
-            0x32: "to-ioa", 0x33: "to-iob", 0x34: "to-ioc", 0x3E: "nop", 0x3F: "dec"
-        }
-
-        if 0x20 <= opcode <= 0x28 and opcode % 2 == 0:
-            return f"to-reg {['RA','RB','RC','RD','RE','RF'][opcode >> 1 & 0x7]}"
-        elif 0x21 <= opcode <= 0x29 and opcode % 2 == 1:
-            return f"from-reg {['RA','RB','RC','RD','RE','RF'][opcode >> 1 & 0x7]}"
-        elif 0x70 <= opcode <= 0x7F:
-            return f"acc {opcode & 0x0F}"
-        elif 0xB0 <= opcode <= 0xB7:
-            return f"beqz (imm)"
-        elif 0xE0 <= opcode <= 0xEF:
-            return f"b (imm)"
-        else:
-            return instr_map.get(opcode, "UNKNOWN")
-
 
     def execute(self, opcode):
         # helper to get memory address from 2 registers: upper nibble first
@@ -397,12 +369,7 @@ class Arch242Emulator:
                 self.registers['PC'] = target
 
         else:
-            self.debug_dump(self.registers['PC'] - 1, opcode)
             raise ValueError(f"Unknown opcode: 0x{opcode:02X}")
-
-
-    def debug_dump(self, pc_snapshot, opcode):
-        print(f"[DEBUG] PC: 0x{pc_snapshot:02X} | Opcode: 0x{opcode:02X} | Instr: {self.disassemble(opcode)}")
 
     def update(self):
         if self.timer_running:
@@ -421,9 +388,6 @@ class Arch242Emulator:
         for _ in range(10):
             pc_snapshot = self.registers['PC']
             opcode = self.fetch()
-            
-            if self.debug:
-                self.debug_dump(pc_snapshot, opcode)
 
             self.execute(opcode)
             
@@ -431,7 +395,6 @@ class Arch242Emulator:
                 self.delay_counter += 1
                 if self.delay_counter > 300:
                     print(f"\n[ERROR] Infinite loop detected at PC = 0x{pc_snapshot:02X}")
-                    self.debug_dump(pc_snapshot, opcode)
                     sys.exit(1)
             else:
                 self.delay_counter = 0
@@ -503,9 +466,6 @@ class Arch242Emulator:
         # top border
         for row in range(2):
             pyxel.rect(0, row * 4, 80, 4, 12)
-
-        # score display
-        #pyxel.text(2, 2, f"Score = {self.memory[0xA0]}", 7)
 
         # side borders x2
         for row in range(2, 20):
