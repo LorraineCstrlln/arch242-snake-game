@@ -36,14 +36,6 @@ branch_ops = {
 # ACC immediate load
 acc_imm_prefix = 0x70
 
-# def parse_operand(operand):
-#     if operand.startswith('0x'):
-#         return int(operand, 16)
-#     elif operand.startswith('0b'):
-#         return int(operand, 2)
-#     else:
-#         return int(operand)
-
 ACC_CODE = 0  # or whatever encoding you want for ACC
 def parse_operand(operand):
     operand = operand.lower().strip()
