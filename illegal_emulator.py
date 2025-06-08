@@ -505,7 +505,7 @@ class Arch242Emulator:
             pyxel.rect(0, row * 4, 80, 4, 12)
 
         # score display
-        pyxel.text(2, 2, f"Score = {self.memory[0xA0]}", 7)
+        #pyxel.text(2, 2, f"Score = {self.memory[0xA0]}", 7)
 
         # side borders x2
         for row in range(2, 20):
@@ -534,7 +534,7 @@ class Arch242Emulator:
         # Draw score
         pyxel.text(2, 2, f"Score: {self.score}", 7)
         if self.game_over:
-            pyxel.text(20, 40, "Press R to try again", 8)
+            pyxel.text(00, 40, "Press R to try again", 7)
         # ==========================
 
 
