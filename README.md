@@ -65,4 +65,5 @@ Project by:
 - Gabriel Inigo D. De Guzman
 - Miguel Joaquin Millora
 - Vitro Atienza Enrique
- *(University of the Philippines - Diliman, Department of Computer Science)*
+
+*(University of the Philippines - Diliman, Department of Computer Science)**
