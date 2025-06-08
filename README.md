@@ -60,4 +60,10 @@ python arch242_assembler.py snake_game.asm snake_game.bin
 python arch242_emulator.py snake_game.bin
 
 Authors
-CS 21 24.2 
+Project by:
+
+Lorraine Gwen M. Castrillon 
+Gabriel Inigo D. De Guzman
+Miguel Joaquin Millora
+Vitro Atienza Enrique
+(University of the Philippines - Diliman, Department of Computer Science)
