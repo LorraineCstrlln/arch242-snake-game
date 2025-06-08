@@ -61,9 +61,8 @@ pip install pyxel
 
 ## Authors ##
 Project by:
-
-Lorraine Gwen M. Castrillon 
-Gabriel Inigo D. De Guzman
-Miguel Joaquin Millora
-Vitro Atienza Enrique
+- Lorraine Gwen M. Castrillon 
+- Gabriel Inigo D. De Guzman
+- Miguel Joaquin Millora
+- Vitro Atienza Enrique
 (University of the Philippines - Diliman, Department of Computer Science)
