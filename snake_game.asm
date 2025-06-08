@@ -1,12 +1,3 @@
-; Memory map:
-; 0x80 - 0x93: Display buffer (rows)
-; 0x90: Direction input (0=right, 1=down, 2=left, 3=up)
-; 0xA0: Score
-; 0xA1: Snake length
-; 0xA2 - 0xBF: Snake body (x0, y0, x1, y1, ...)
-; 0xB0: Food X
-; 0xB1: Food Y
-
 ; === Initialization ===
 ;clear A0-A3
 
@@ -180,12 +171,14 @@ store_head:
     from-reg r2
     to-reg r4        ; bit loop counter
     acc 1
+
 bitloop:
     from-reg r4
     beqz setpixel
     dec*-reg r4
     add 1
     b bitloop
+
 setpixel:
     to-mba
     b wait
@@ -220,5 +213,3 @@ eat_food:
     to-mba
 
     b wait
-
-
