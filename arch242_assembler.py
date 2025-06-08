@@ -140,32 +140,8 @@ def assemble_line(line):
     else:
         raise ValueError(f"Unknown instruction: {instr}")
 
-# def assemble(input_file, output_file):
-#     with open(input_file, 'r') as fin, open(output_file, 'wb') as fout:
-#         for lineno, line in enumerate(fin, 1):
-#             try:
-#                 machine_code = assemble_line(line)
-#                 fout.write(bytearray(machine_code))
-#             except ValueError as e:
-#                 print(f"[Line {lineno}] Error: {e} -> \"{line.strip()}\"")
 
 def assemble(input_file, output_file):
-    # First pass: record labels
-    # labels = {}
-    # addr = 0
-    # with open(input_file, 'r') as fin:
-    #     for line in fin:
-    #         line_clean = line.split(';')[0].strip()
-    #         if line_clean.endswith(':'):
-    #             label = line_clean[:-1].strip()
-    #             labels[label] = addr
-    #         else:
-    #             try:
-    #                 code = assemble_line(line_clean)
-    #                 addr += len(code)
-    #             except ValueError:
-    #                 pass  # Ignore errors for now (will catch later)
-
     # First pass: record labels
     labels = {}
     addr = 0
