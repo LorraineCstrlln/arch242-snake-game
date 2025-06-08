@@ -8,6 +8,28 @@
 ; 0xB1: Food Y
 
 ; === Initialization ===
+;clear A0-A3
+
+acc 0x0A
+to-reg r0
+acc 0x00
+to-reg r1
+
+from-reg r4
+to-mba          ; [A0] = 0
+
+inc*-reg r1
+from-reg r4
+to-mba          ; [A1] = 0
+
+inc*-reg r1
+from-reg r4
+to-mba          ; [A2] = 0
+
+inc*-reg r1
+from-reg r4
+to-mba          ; [A3] = 0
+
 init:
     acc 0
     to-reg r0
@@ -41,11 +63,13 @@ init:
 
     ; Set score = 0
     acc 0
+    to-reg r4
     acc 0x0A
     to-reg r0
     acc 0x00
     to-reg r1
-    to-mba          ; [0xA0] = 0
+    from-reg r4
+    to-mba
 
     ; Food pos = (3, 5)
     acc 3
@@ -173,6 +197,7 @@ wait:
 
 
 ; === Eat Food Routine ===
+; for score increase
 eat_food:
     ; Load score from memory [A0] (score addr = 0x0A, 0x00)
     acc 0x0A
@@ -195,4 +220,5 @@ eat_food:
     to-mba
 
     b wait
+
 
