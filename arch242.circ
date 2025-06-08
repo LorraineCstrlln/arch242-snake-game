@@ -1213,34 +1213,34 @@
       <a name="color" val="#00f011"/>
       <a name="facing" val="east"/>
     </comp>
-    <comp lib="8" loc="(1541,1164)" name="Text">
+    <comp lib="8" loc="(1540,1160)" name="Text">
       <a name="text" val="Special Registers"/>
     </comp>
-    <comp lib="8" loc="(1593,774)" name="Text">
+    <comp lib="8" loc="(1590,770)" name="Text">
       <a name="text" val="RegFile"/>
     </comp>
-    <comp lib="8" loc="(2155,1358)" name="Text">
+    <comp lib="8" loc="(2155,1355)" name="Text">
       <a name="text" val="Rotate"/>
     </comp>
-    <comp lib="8" loc="(2156,687)" name="Text">
+    <comp lib="8" loc="(2155,685)" name="Text">
       <a name="text" val="ALU"/>
     </comp>
     <comp lib="8" loc="(265,255)" name="Text">
       <a name="text" val="Instruction Decoder"/>
     </comp>
-    <comp lib="8" loc="(2754,712)" name="Text">
+    <comp lib="8" loc="(2750,710)" name="Text">
       <a name="text" val="Data Memory"/>
     </comp>
     <comp lib="8" loc="(3240,810)" name="Text">
       <a name="text" val="WriteBack"/>
     </comp>
-    <comp lib="8" loc="(666,114)" name="Text">
+    <comp lib="8" loc="(665,110)" name="Text">
       <a name="text" val="Control Unit"/>
     </comp>
-    <comp lib="8" loc="(803,1145)" name="Text">
+    <comp lib="8" loc="(800,1145)" name="Text">
       <a name="text" val="Immediate Decoder"/>
     </comp>
-    <comp lib="8" loc="(805,832)" name="Text">
+    <comp lib="8" loc="(805,830)" name="Text">
       <a name="text" val="Instruction Memory"/>
     </comp>
     <comp loc="(1060,900)" name="instrlengthdec"/>
@@ -7110,7 +7110,7 @@
       <a name="addrWidth" val="16"/>
       <a name="appearance" val="classic"/>
       <a name="contents">addr/data: 16 8
-37 3e f3 16
+0
 </a>
       <a name="label" val="InstructionMemory"/>
     </comp>
@@ -7118,7 +7118,7 @@
       <a name="addrWidth" val="16"/>
       <a name="appearance" val="classic"/>
       <a name="contents">addr/data: 16 8
-37 3e f3 16
+0
 </a>
     </comp>
     <wire from="(340,160)" to="(390,160)"/>
