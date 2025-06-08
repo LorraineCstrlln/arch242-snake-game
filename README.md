@@ -48,14 +48,14 @@ Development Notes
 - Assembly is highly compact due to 4 bit register contraints
 
    
-## Requirements
+## Requirements ##
 - Python 3.7+
 - Pyxel
 
 Install dependecies:
 pip install pyxel
 
-##Usage/Run
+## Usage/Run ##
 python arch242_assembler.py snake_game.asm snake_game.bin
 python arch242_emulator.py snake_game.bin
 
