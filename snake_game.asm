@@ -1,6 +1,4 @@
-; === Initialization ===
-;clear A0-A3
-
+; === INIT ===
 acc 0x0A
 to-reg r0
 acc 0x00
@@ -33,7 +31,7 @@ init:
     acc 0
     to-reg r4 ;Y
 
-    ; Store to snake head memory A2 (X), A3 (Y)
+    ; store to snake head -> A2 (X), A3 (Y)
     acc 0x0A
     to-reg r0       ; RB = 0x0A
     acc 0x02
@@ -44,7 +42,7 @@ init:
     from-reg r4
     to-mba          ; [0xA3] = 10
 
-    ; Set length to 1 (1 segment)
+    ; length = 1 (snake bodeh)
     acc 1
     acc 0x0A
     to-reg r0
@@ -52,7 +50,7 @@ init:
     to-reg r1
     to-mba          ; [0xA1] = 1
 
-    ; Set score = 0
+    ; score = 0 (default)
     acc 0
     to-reg r4
     acc 0x0A
@@ -73,16 +71,15 @@ init:
     inc*-reg r1
     to-mba          ; [0xB1] = 5
 
-    timer-start
     b main
 
 ; === Main Loop ===
 main:
-    ; Direction comes from PA
-    from-pa
-    to-reg r5       ; r5 = dir
+    ; IOA: direction
+    from-ioa
+    to-reg r4       ; r4 = dir
 
-    ; Load head position
+    ; load head 
     acc 0x0A
     to-reg r0
     acc 0x02
@@ -93,17 +90,17 @@ main:
     from-mba        ; Y
     to-reg r3
 
-    ; Apply direction (r5)
-    from-reg r5
+    ; direction (r4)
+    from-reg r4
     sub 0
     beqz dir_right
-    from-reg r5
+    from-reg r4
     sub 1
     beqz dir_down
-    from-reg r5
+    from-reg r4
     sub 2
     beqz dir_left
-    from-reg r5
+    from-reg r4
     sub 3
     beqz dir_up
     b store_head
@@ -152,7 +149,7 @@ wrap_ymax:
     to-reg r3
 
 store_head:
-    ; store updated head to A2, A3
+    ; store updated head -> A2, A3
     acc 0x0A
     to-reg r0
     acc 0x02
@@ -184,13 +181,14 @@ setpixel:
     b wait
 
 wait:
-    from-pa
+    from-ioa
     to-reg r5
-    b wait           ; PC will reset to 0x04 on TIMER tick
-
+    from-reg r5
+    sub 0
+    bnez main
+    b wait
 
 ; === Eat Food Routine ===
-; for score increase
 eat_food:
     ; Load score from memory [A0] (score addr = 0x0A, 0x00)
     acc 0x0A

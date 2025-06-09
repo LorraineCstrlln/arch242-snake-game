@@ -2,6 +2,22 @@ import sys
 import re
 
 # Define instruction encodings
+# instruction_set = {
+#     'rot-r': 0x00, 'rot-l': 0x01, 'rot-rc': 0x02, 'rot-lc': 0x03,
+#     'from-mba': 0x04, 'to-mba': 0x05, 'from-mdc': 0x06, 'to-mdc': 0x07,
+#     'addc-mba': 0x08, 'add-mba': 0x09, 'subc-mba': 0x0A, 'sub-mba': 0x0B,
+#     'inc*-mba': 0x0C, 'dec*-mba': 0x0D, 'inc*-mdc': 0x0E, 'dec*-mdc': 0x0F,
+#     'and-ba': 0x1A, 'xor-ba': 0x1B, 'or-ba': 0x1C,
+#     'and*-mba': 0x1D, 'xor*-mba': 0x1E, 'or*-mba': 0x1F,
+#     'clr-cf': 0x2A, 'set-cf': 0x2B, 'set-ei': 0x2C, 'clr-ei': 0x2D,
+#     'ret': 0x2E, 'retc': 0x2F, 'from-pa': 0x30, 'inc': 0x31,
+#     'to-ioa': 0x32, 'to-iob': 0x33, 'to-ioc': 0x34,
+#     'bcd': 0x36, 'shutdown': [0x37, 0x3E], 'timer-start': 0x38, 'timer-end': 0x39,
+#     'from-timerl': 0x3A, 'from-timerh': 0x3B, 'to-timerl': 0x3C, 'to-timerh': 0x3D,
+#     'nop': 0x3E, 'dec': 0x3F,
+# }
+
+# new changes ni sir
 instruction_set = {
     'rot-r': 0x00, 'rot-l': 0x01, 'rot-rc': 0x02, 'rot-lc': 0x03,
     'from-mba': 0x04, 'to-mba': 0x05, 'from-mdc': 0x06, 'to-mdc': 0x07,
@@ -9,11 +25,10 @@ instruction_set = {
     'inc*-mba': 0x0C, 'dec*-mba': 0x0D, 'inc*-mdc': 0x0E, 'dec*-mdc': 0x0F,
     'and-ba': 0x1A, 'xor-ba': 0x1B, 'or-ba': 0x1C,
     'and*-mba': 0x1D, 'xor*-mba': 0x1E, 'or*-mba': 0x1F,
-    'clr-cf': 0x2A, 'set-cf': 0x2B, 'set-ei': 0x2C, 'clr-ei': 0x2D,
-    'ret': 0x2E, 'retc': 0x2F, 'from-pa': 0x30, 'inc': 0x31,
-    'to-ioa': 0x32, 'to-iob': 0x33, 'to-ioc': 0x34,
-    'bcd': 0x36, 'shutdown': [0x37, 0x3E], 'timer-start': 0x38, 'timer-end': 0x39,
-    'from-timerl': 0x3A, 'from-timerh': 0x3B, 'to-timerl': 0x3C, 'to-timerh': 0x3D,
+    'clr-cf': 0x2A, 'set-cf': 0x2B,
+    'ret': 0x2E,
+    'from-ioa': 0x32, 'inc': 0x31,
+    'bcd': 0x36, 'shutdown': [0x37, 0x3E],
     'nop': 0x3E, 'dec': 0x3F,
 }
 
@@ -22,14 +37,23 @@ reg_ops = {'inc*-reg': 0x10, 'dec*-reg': 0x11, 'to-reg': 0x20, 'from-reg': 0x21}
 regs = {'r0': 0b000, 'r1': 0b001, 'r2': 0b010, 'r3': 0b011, 'r4': 0b100, 'r5': 0b101}
 
 # Two-byte immediate instructions
+# imm_ops = {
+#     'add': 0x40, 'sub': 0x41, 'and': 0x42, 'xor': 0x43, 'or': 0x44, 'timer': 0x47
+# }
 imm_ops = {
-    'add': 0x40, 'sub': 0x41, 'and': 0x42, 'xor': 0x43, 'or': 0x44, 'timer': 0x47
+    'add': 0x40, 'sub': 0x41, 'and': 0x42, 'xor': 0x43, 'or': 0x44
 }
 
+
 # Special branch and jump instructions
+# branch_ops = {
+#     'b-bit': 0x80, 'bnz-a': 0xA0, 'bnz-b': 0xA8, 'beqz': 0xB0, 'bnez': 0xB8,
+#     'beqz-cf': 0xC0, 'bnez-cf': 0xC8, 'b-timer': 0xD0, 'bnz-d': 0xD8,
+#     'b': 0xE0, 'call': 0xF0
+# }
 branch_ops = {
     'b-bit': 0x80, 'bnz-a': 0xA0, 'bnz-b': 0xA8, 'beqz': 0xB0, 'bnez': 0xB8,
-    'beqz-cf': 0xC0, 'bnez-cf': 0xC8, 'b-timer': 0xD0, 'bnz-d': 0xD8,
+    'beqz-cf': 0xC0, 'bnez-cf': 0xC8, 'bnz-d': 0xD8,
     'b': 0xE0, 'call': 0xF0
 }
 
@@ -39,14 +63,13 @@ acc_imm_prefix = 0x70
 ACC_CODE = 0  # or whatever encoding you want for ACC
 def parse_operand(operand):
     operand = operand.lower().strip()
-    
+
     if operand == "acc":
-        # define ACC_CODE somewhere, for example 0 or a unique code
         return ACC_CODE
-    
+
     if operand in regs:
-        return operand  # Leave registers as string for the caller to handle
-    
+        return operand
+
     try:
         if operand.startswith('0x'):
             return int(operand, 16)
@@ -84,7 +107,6 @@ def assemble_line(line):
             raise ValueError(f"Missing operand for: {instr}")
         operand = tokens[1].lower()
         if operand in regs:
-            # e.g., sub r2  →  from-reg r2, sub 0
             code.append(reg_ops['from-reg'] | (regs[operand] << 1))
             code.append(imm_ops[instr])
             code.append(0x00)
@@ -132,7 +154,7 @@ def assemble_line(line):
         imm = parse_operand(tokens[1])
         x = (imm >> 4) & 0x0F
         y = imm & 0x0F
-        prefix = 0x50 if instr == 'rarb' else 0x58
+        prefix = 0x50 if instr == 'rarb' else 0x60
         code.append(prefix | x)
         code.append(y)
         return code
@@ -140,9 +162,7 @@ def assemble_line(line):
     else:
         raise ValueError(f"Unknown instruction: {instr}")
 
-
 def assemble(input_file, output_file):
-    # First pass: record labels
     labels = {}
     addr = 0
     with open(input_file, 'r') as fin:
@@ -159,14 +179,11 @@ def assemble(input_file, output_file):
                     code = assemble_line(line_clean)
                     addr += len(code)
                 except ValueError as e:
-                    # If the error is due to unresolved labels, just skip for now
                     if 'Could not parse operand' in str(e) or 'Missing' in str(e):
-                        continue  # label might be resolved in second pass
+                        continue
                     else:
                         print(f"[Warning] Skipping invalid instruction: {line_clean}")
 
-
-    # Second pass: generate code with label resolution
     with open(input_file, 'r') as fin, open(output_file, 'wb') as fout:
         for lineno, line in enumerate(fin, 1):
             line_clean = line.split(';')[0].strip()
@@ -181,7 +198,7 @@ def assemble(input_file, output_file):
                 if label in labels:
                     print(f"[Assembler] Resolved label '{label}' -> {labels[label]:02X}")
                     tokens[1] = str(labels[label])
-                    line_clean = ' '.join(tokens)  # rebuild line with resolved label
+                    line_clean = ' '.join(tokens)
 
             try:
                 machine_code = assemble_line(line_clean)
@@ -192,7 +209,6 @@ def assemble(input_file, output_file):
             except ValueError as e:
                 print(f"[Line {lineno}] Error: {e} -> \"{line.strip()}\"")
                 raise e
-
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
